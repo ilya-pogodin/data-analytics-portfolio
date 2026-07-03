@@ -1,0 +1,185 @@
+openapi: 3.0.3
+
+info:
+  title: ZooTicket Payments API
+  description: >
+    API для оплаты билетов в системе онлайн-покупки билетов в зоопарк «ZooTicket».
+    Основные методы: создать платёж, узнать статус платежа, сделать возврат
+    и принять уведомление об оплате от платёжной системы.
+  version: 1.0.0
+
+servers:
+  - url: https://api.zooticket.ru/v1
+    description: Основной сервер
+
+paths:
+
+  /payments:
+    post:
+      summary: Создать платёж
+      description: Создаёт новый платёж для оплаты заказа и возвращает ссылку на оплату.
+      operationId: createPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+            example:
+              orderId: "1024"
+              amount: 1500
+              currency: "RUB"
+              returnUrl: "https://zooticket.ru/success"
+      responses:
+        '201':
+          description: Платёж создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+              example:
+                id: "pay_001"
+                status: "pending"
+                paymentUrl: "https://pay.bank.ru/abc123"
+
+  /payments/{id}:
+    get:
+      summary: Узнать статус платежа
+      description: Возвращает информацию о платеже по его идентификатору.
+      operationId: getPayment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор платежа
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Информация о платеже
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+              example:
+                id: "pay_001"
+                status: "succeeded"
+
+  /payments/{id}/refund:
+    post:
+      summary: Вернуть деньги (возврат)
+      description: Оформляет возврат денег за оплаченный билет.
+      operationId: refundPayment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор платежа
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+            example:
+              amount: 1500
+      responses:
+        '200':
+          description: Возврат выполнен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+              example:
+                id: "ref_001"
+                status: "succeeded"
+
+  /webhooks/payment:
+    post:
+      summary: Уведомление от платёжной системы
+      description: >
+        Этот метод вызывает платёжная система, чтобы сообщить сайту результат оплаты.
+      operationId: paymentWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookRequest'
+            example:
+              paymentId: "pay_001"
+              status: "succeeded"
+      responses:
+        '200':
+          description: Уведомление получено
+
+components:
+  schemas:
+
+    CreatePaymentRequest:
+      type: object
+      required: [orderId, amount, currency, returnUrl]
+      properties:
+        orderId:
+          type: string
+          description: Номер заказа в системе
+          example: "1024"
+        amount:
+          type: number
+          description: Сумма к оплате
+          example: 1500
+        currency:
+          type: string
+          description: Валюта, например "RUB"
+          example: "RUB"
+        returnUrl:
+          type: string
+          description: Страница, куда вернётся пользователь после оплаты
+          example: "https://zooticket.ru/success"
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "pay_001"
+        status:
+          type: string
+          enum: [pending, succeeded, failed, refunded]
+          example: "pending"
+        paymentUrl:
+          type: string
+          description: Ссылка на страницу оплаты
+          example: "https://pay.bank.ru/abc123"
+
+    RefundRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          description: Сумма возврата
+          example: 1500
+
+    Refund:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "ref_001"
+        status:
+          type: string
+          enum: [pending, succeeded, failed]
+          example: "succeeded"
+
+    WebhookRequest:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          example: "pay_001"
+        status:
+          type: string
+          example: "succeeded"
