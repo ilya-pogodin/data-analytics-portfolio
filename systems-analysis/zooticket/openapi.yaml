@@ -6,11 +6,25 @@ info:
     API для оплаты билетов в системе онлайн-покупки билетов в зоопарк «ZooTicket».
     Основные методы: создать платёж, узнать статус платежа, сделать возврат
     и принять уведомление об оплате от платёжной системы.
-  version: 1.0.0
+
+
+    Идемпотентность: при создании платежа передаётся заголовок Idempotency-Key.
+    Повторный запрос с тем же ключом (например, при двойном нажатии «Оплатить»)
+    не создаёт новый платёж, а возвращает уже созданный.
+
+
+    Защита webhook: метод /webhooks/payment вызывает платёжная система. Чтобы
+    убедиться, что запрос пришёл действительно от неё, тело подписывается секретным
+    ключом (HMAC-SHA256); подпись передаётся в заголовке X-Signature и проверяется
+    на стороне сайта.
+  version: 1.1.0
 
 servers:
   - url: https://api.zooticket.ru/v1
     description: Основной сервер
+
+security:
+  - bearerAuth: []
 
 paths:
 
@@ -19,6 +33,16 @@ paths:
       summary: Создать платёж
       description: Создаёт новый платёж для оплаты заказа и возвращает ссылку на оплату.
       operationId: createPayment
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: >
+            Уникальный ключ запроса (например, номер заказа). Защищает от повторного
+            создания платежа при двойном нажатии «Оплатить»: повторный запрос с тем же
+            ключом возвращает уже созданный платёж.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -41,6 +65,14 @@ paths:
                 id: "pay_001"
                 status: "pending"
                 paymentUrl: "https://pay.bank.ru/abc123"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /payments/{id}:
     get:
@@ -64,6 +96,12 @@ paths:
               example:
                 id: "pay_001"
                 status: "succeeded"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /payments/{id}/refund:
     post:
@@ -95,13 +133,28 @@ paths:
               example:
                 id: "ref_001"
                 status: "succeeded"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
   /webhooks/payment:
     post:
       summary: Уведомление от платёжной системы
       description: >
         Этот метод вызывает платёжная система, чтобы сообщить сайту результат оплаты.
+        Запрос не использует пользовательский токен: подлинность подтверждается
+        подписью тела (HMAC-SHA256) в заголовке X-Signature. Если подпись неверна,
+        запрос отклоняется с кодом 400 и статус платежа не меняется.
       operationId: paymentWebhook
+      security:
+        - webhookSignature: []
       requestBody:
         required: true
         content:
@@ -114,8 +167,90 @@ paths:
       responses:
         '200':
           description: Уведомление получено
+        '400':
+          description: Неверная подпись или некорректное тело запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: invalid_signature
+                message: Подпись запроса неверна
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
 
 components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Токен авторизованного пользователя
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Signature
+      description: Подпись тела запроса (HMAC-SHA256) от платёжной системы
+
+  responses:
+    BadRequest:
+      description: Ошибка в данных запроса (например, некорректная сумма)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: invalid_amount
+            message: Некорректная сумма платежа
+    Unauthorized:
+      description: Нет авторизации или неверный токен
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: unauthorized
+            message: Требуется авторизация
+    NotFound:
+      description: Объект не найден (например, платёж)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: payment_not_found
+            message: Платёж не найден
+    Conflict:
+      description: Конфликт — повторный платёж по тому же заказу
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: payment_already_exists
+            message: Платёж по этому заказу уже создан
+    UnprocessableEntity:
+      description: Операцию нельзя выполнить (например, возврат невозможен)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: refund_not_allowed
+            message: Возврат невозможен (платёж не оплачен или уже возвращён)
+    ServerError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: internal_error
+            message: Внутренняя ошибка сервера
+
   schemas:
 
     CreatePaymentRequest:
@@ -141,6 +276,7 @@ components:
 
     Payment:
       type: object
+      required: [id, status]
       properties:
         id:
           type: string
@@ -151,7 +287,7 @@ components:
           example: "pending"
         paymentUrl:
           type: string
-          description: Ссылка на страницу оплаты
+          description: Ссылка на страницу оплаты (в ответе на создание платежа)
           example: "https://pay.bank.ru/abc123"
 
     RefundRequest:
@@ -165,6 +301,7 @@ components:
 
     Refund:
       type: object
+      required: [id, status]
       properties:
         id:
           type: string
@@ -176,10 +313,26 @@ components:
 
     WebhookRequest:
       type: object
+      required: [paymentId, status]
       properties:
         paymentId:
           type: string
           example: "pay_001"
         status:
           type: string
+          description: Результат оплаты
+          enum: [succeeded, failed]
           example: "succeeded"
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Короткий машинный код ошибки
+          example: payment_not_found
+        message:
+          type: string
+          description: Понятное человеку описание ошибки
+          example: Платёж не найден

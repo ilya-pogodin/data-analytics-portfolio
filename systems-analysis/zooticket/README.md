@@ -9,4 +9,4 @@
 | Требования | Функциональные и нефункциональные требования к оплате, истории покупок, уведомлениям |
 | Моделирование | [Sequence-диаграмма: контроль QR на входе](diagrams/sequence-qr-entry.svg) · [Диаграмма классов](diagrams/class-diagram.svg) · [Диаграмма состояний билета](diagrams/ticket-state-diagram.svg) |
 | Прототип | [Кликабельный прототип покупки билета, 4 экрана](prototype.pdf) |
-| API | [Спецификация платёжного REST API — OpenAPI 3.0](openapi.yaml): создание платежа, статус, возврат, webhook |
+| API | [Спецификация платёжного REST API — OpenAPI 3.0](openapi.yaml): создание платежа, статус, возврат, webhook. v1.1: идемпотентность (Idempotency-Key), HMAC-подпись webhook, обработка ошибок 400–500 |
