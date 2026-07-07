@@ -19,8 +19,8 @@
 
 ## Дашборды (Yandex DataLens)
 
-- [Дашборд 1](https://datalens.yandex/54t4170fmpb2p)
-- [Дашборд 2](https://datalens.yandex/qo5b8cn0qsroa)
+- [HR-дашборд](https://datalens.yandex/54t4170fmpb2p)
+- [HR-дашборд: воронка найма и сроки закрытия вакансий](https://datalens.yandex/qo5b8cn0qsroa)
 - [Продажи интернет-магазина](https://datalens.yandex/ylvxdcktu1pqh)
 
 ## Образование
