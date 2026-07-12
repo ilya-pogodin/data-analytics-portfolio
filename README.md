@@ -4,7 +4,7 @@
 
 Совмещаю SQL-анализ и визуализацию с практическим опытом найма и обучения персонала. Подтверждённые ИТ-компетенции НСОК (Минцифры): **PostgreSQL — средний уровень**, **ООП — средний**, Python и API — базовый.
 
-📫 Контакты: [hh.ru] (https://nn.hh.ru/resume/80aa90f7ff10bf99940039ed1f45623845535a?hhtmFrom=applicant_profile) · [Telegram]@Nst_94 · email: (idp02@mail.ru)
+📫 Контакты: [hh.ru] (https://nn.hh.ru/resume/80aa90f7ff10bf99940039ed1f45623845535a?hhtmFrom=applicant_profile) · [Telegram]@Nst_94 · [email] (idp02@mail.ru)
 
 ---
 
