@@ -4,7 +4,7 @@
 
 Совмещаю SQL-анализ и визуализацию с практическим опытом найма и обучения персонала. Подтверждённые ИТ-компетенции НСОК (Минцифры): **PostgreSQL — средний уровень**, **ООП — средний**, Python и API — базовый.
 
-📫 Контакты: [hh.ru](https://nn.hh.ru/resume/80aa90f7ff10bf99940039ed1f45623845535a?hhtmFrom=applicant_profile) · Telegram: @Nst_94 · email: idp02@mail.ru
+📫 Контакты: [hh.ru](#) · [Telegram](#) · email
 
 ---
 
@@ -22,6 +22,7 @@
 - [HR-дашборд](https://datalens.yandex/54t4170fmpb2p)
 - [HR-дашборд: воронка найма и сроки закрытия вакансий](https://datalens.yandex/qo5b8cn0qsroa)
 - [Продажи интернет-магазина](https://datalens.yandex/ylvxdcktu1pqh)
+- [Дашборд для агентства недвижимости](https://datalens.yandex/xlu3tbgnih78g)
 
 ## Образование
 
